@@ -14,10 +14,14 @@ int i;
 void readTemp();
 void readLight();
 
+#define TEMP_PIN A5
+#define LIGHT_PIN A2
+
 void setup(){
   Serial.begin(9600);     // Inicializa comunicação serial
 
-  pinMode(A2, INPUT);
+  pinMode(TEMP_PIN, INPUT);
+  pinMode(LIGHT_PIN, INPUT);
 }
 
 void loop()
@@ -30,7 +34,7 @@ void loop()
 
 void readTemp(){
   for (i = 0; i <= 7; i++) { // Loop que faz a leitura da temperatura 8 vezes
-    samples[i] = ( 5.0 * analogRead(pin) * 100.0) / 1024.0;
+    samples[i] = ( 5.0 * analogRead(TEMP_PIN) * 100.0) / 1024.0;
     //A cada leitura, incrementa o valor da variavel tempc
     tempc = tempc + samples[i];
     delay(100);
@@ -66,7 +70,7 @@ void readTemp(){
 }
 
 void readLight(){
-  int value = analogRead(A2);
+  int value = analogRead(LIGHT_PIN);
   Serial.print("Luz: ");
   Serial.println(value);
 }

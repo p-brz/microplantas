@@ -59,6 +59,88 @@ void beginRadio();
 void emitterLoop();
 void receiverLoop();
 
+#define BUF_SIZE 64
+
+class Buffer{
+public:
+  Buffer() : idx(0)
+  {}
+  
+  bool put(const void * data, int length){
+    if(length + idx > BUF_SIZE){
+      return false;
+    }
+    
+    for(int i = 0; i < index; ++i){
+      buffer[idx] = data[i];
+    }
+    return true;
+  }
+  
+  bool get(void * data, int length){
+    if(length + idx > BUF_SIZE){
+      return false;
+    }
+    
+    for(int i = 0; i < index; ++i){
+      data[i] = buffer[idx];
+    }
+    return true;
+  }
+  
+  int index() const{ 
+    return idx;
+  }
+  
+  void reset(){
+    idx = 0;
+  }
+
+  const byte * data(){
+      return buffer;
+  }
+  int size() const{
+    return idx;
+  }
+  
+private:
+  byte buffer[BUF_SIZE];
+  int idx; //aponta onde sera real
+}
+
+class Sender{
+public:
+  Sender(Buffer * buf) : buffer(buf)
+  {}
+  
+  void write(int lenght, const void * data){
+    
+  }
+  int send(){
+    radio.write(&length, sizeof(length));
+    radio.writeBlocking(data,length,1000); //Wait up to 1 second to write 1 payload to the buffers
+    if(radio.write(buffer->data(), );                   //Wait up to 1 second for the payload to send. Return 1 if ok, 0 if failed.
+                                       //Blocks only until user timeout or success. Data flushed on fail.
+
+  }
+
+private:
+  Buffer * buffer;
+}
+
+class Receiver{
+public:  
+  Receiver(Buffer * buf) : buffer(buf)
+  {}
+  
+  bool available();
+  int read();
+  bool get(int bufferLength, void * outData);
+
+private:
+  Buffer * buffer;
+}
+
 void setup(void){
   Serial.begin(9600);
   printf_begin();
