@@ -9,48 +9,44 @@
 #include "communication.h"
 #include "sensors.h"
 
+#include "helpers/Timer.h"
+
+enum class roles : byte{
+    sensor,
+    bridge
+};
+
 class Microplants{
 public:
     void setup() {
         Serial.begin(9600);
 
-        pinMode(7, OUTPUT);
-        digitalWrite(7, HIGH);
+        //Pin to debug when standalone arduino is running
+        pinMode(DEBUG_PIN, OUTPUT);
+        digitalWrite(DEBUG_PIN, HIGH);
 
-        emissor = (getRole() == 1);
+        this->role = getRole();
 
-        Serial.print("is emitter: "); Serial.println(emissor);
-        //  emissor = false;
+        bool isSensorNode = role == roles::sensor;
 
-        uint64_t readPipe = (emissor ? 0 : pipe);
-        uint64_t writePipe = (emissor ? pipe : 0);
+        uint64_t readPipe = (isSensorNode  ? 0    : pipe1);
+        uint64_t writePipe = (isSensorNode ? pipe1 : 0);
         comm.begin(readPipe, writePipe);
 
-        if(emissor){
+        if(role == roles::sensor){
             setupSensors();
         }
     }
 
     void loop() {
         // put your main code here, to run repeatedly:
-        if(emissor){
+        if(role == roles::sensor){
             handleServices();
             sendSensors();
         }
         else{
             receiveSensors();
         }
-    }
-
-    int getRole(){
-        Serial.println("ROLE: emissor(1), receptor(0)?");
-        int r;
-        while(!Serial.available()){
-            delay(50);
-        }
-        r= Serial.read();
-
-        return (r == '1') ? 1 : 0;
     }
 
     void setupSensors(){
@@ -63,24 +59,32 @@ public:
 
         sensorAgregator.addNode(1, &reader1);
         sensorAgregator.addNode(2, &reader2);
-        //  sensorAgregator.addNode(1, &reader1);
     }
 
     void handleServices(){
         //TODO: implement
+        /*
+         * 1. Tem dados para receber?
+         *  1.1. Lê dados em buffer
+         *  1.2. Identifica o comando e argumentos
+         *  1.3. Executa serviço
+         *
+         * 2. Atualiza cada serviço em execução:
+         *  2.1. Se serviço sofrer atualização
+         *  2.2. Envia evento de notificação
+         *
+        */
     }
 
     void sendSensors(){
-        for(int i=0; i < sensorAgregator.count(); ++i){
-            Serial.print("Send data for reader: #"); Serial.println(i);
-            sensorAgregator.sendData(i);
+        if(poolingTimer.finished()){
+            for(int i=0; i < sensorAgregator.count(); ++i){
+                Serial.print("Send data for reader: #"); Serial.println(i);
+                sensorAgregator.sendData(i);
+            }
 
-            delay(10);
+            poolingTimer.start();
         }
-
-        //TODO: remover delay!!!!! (para não perder evento)
-        // Try again in a short while
-        delay(SENSOR_PERIOD);
     }
 
     void receiveSensors(){
@@ -107,7 +111,29 @@ public:
             }
             //    Serial.println("\"");
         }
+
+        //TODO: receber comandos da Serial e repassar via RF
+
         delay(30);
+    }
+
+protected:
+
+    roles getRole(){
+        Serial.println("ROLE: sensor(1), ponte(0)?");
+        int r;
+
+        while(!Serial.available()){
+            delay(50);
+        }
+        r= Serial.read();
+
+
+        roles role = ((r == '1') ? roles::sensor : roles::bridge);
+
+        Serial.println((role == roles::sensor ? "sensor" : "bridge"));
+
+        return role;
     }
 
 private:
@@ -116,8 +142,9 @@ private:
 //    CommunicationSerial comm;
     BasicSensorReader<2> reader1, reader2;
     SensorAgregator<decltype(comm)> sensorAgregator{&comm};
-    bool emissor = false;
+    roles role = roles::bridge;
 
+    Timer poolingTimer{SENSOR_PERIOD};
 };
 
 #endif // MICROPLANTS_H
