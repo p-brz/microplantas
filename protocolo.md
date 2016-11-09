@@ -12,7 +12,7 @@ O fluxo principal de ativação de um serviço é descrito a seguir:
 1. Cliente (através da "bridge") envia comando (em JSON) para ativar serviço. Valor inclui nome do comando, # do nó alvo e pode incluir argumentos (opcionais).
 Ex.:
 ```json
-	{ "#" : 1, "cmd" : "regar", "volume" : 200}
+	{ "#" : 1, "cmd" : "regar", "duration" : 200}
 ```
 2. Nó sensor verifica comando e inicia execução do serviço. Ele retorna uma mensagem codificada como um objeto JSON, contendo o resultado da requisição (seguindo codificação de status utilizados em HTTP). Pode haver também uma mensagem para explicar o resultado (erro) caso ocorra.
 

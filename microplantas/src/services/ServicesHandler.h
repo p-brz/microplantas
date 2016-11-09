@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include "ServiceManager.h"
+#include "helpers/Timer.h"
 
 #include "serialization/ClearableBuffer.h"
 
@@ -20,6 +21,39 @@ public:
         : comm(comm)
         , jsonBuffer(buffer)
     {}
+
+    void servicesUpdate()
+    {
+        bool display = timer.finished();
+
+        if(display){
+            timer.start();
+        }
+
+        for (int i = 0; i < servManager.numServices; ++i) {
+            Service * s = servManager.services[i].serv;
+            int nodeId = servManager.services[i].nodeId;
+
+            if(s->running()){
+                s->update();
+
+                if(display || !s->running()){
+                    jsonBuffer->clear();
+                    JsonObject & obj = jsonBuffer->createObject();
+                    obj.set(id, nodeId);
+                    obj.set(event, "notify");
+
+                    JsonObject & child = obj.createNestedObject(s->name);
+
+                    s->query(child);
+
+                    comm->sendJson(obj);
+                }
+            }
+        }
+
+        jsonBuffer->clear();
+    }
 
     void handleServices(){
         //TODO: implement
@@ -42,27 +76,7 @@ public:
             handleRequest(*jsonBuffer);
         }
 
-        for (int i = 0; i < servManager.numServices; ++i) {
-            Service * s = servManager.services[i].serv;
-            int nodeId = servManager.services[i].nodeId;
-
-            if(s->running()){
-                jsonBuffer->clear();
-                JsonObject & obj = jsonBuffer->createObject();
-                obj.set("#", nodeId);
-                obj.set("evt", "notify");
-
-                JsonObject & child = obj.createNestedObject(s->name);
-
-                s->update();
-                s->query(child);
-
-                comm->sendJson(obj);
-
-            }
-        }
-
-        jsonBuffer->clear();
+        servicesUpdate();
     }
 
     void sendStatus(StatusCode status){
@@ -83,8 +97,8 @@ protected:
             return;
         }
 
-        int nodeId = obj.get<int>("#");
-        const char * cmd = obj.get<const char *>("cmd");
+        int nodeId = obj.get<int>(id);
+        const char * cmd = obj.get<const char *>(command);
         Service * s = servManager.getService(nodeId, cmd);
 
         if(s){
@@ -106,8 +120,13 @@ protected:
 protected:
     Communication * comm;
     ClearableBuffer * jsonBuffer;
+    Timer timer{450};
+
 public:
     ServiceManager servManager;
+    constexpr static const char * id = "id";
+    constexpr static const char * command = "cmd";
+    constexpr static const char * event = "evt";
 };
 
 #endif // SERVICESHANDLER_H

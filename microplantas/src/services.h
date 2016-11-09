@@ -48,7 +48,7 @@ public:
 
 protected:
     float calcProgress() const{
-        float progress = wateringTimer.timeToFinish()/(float)wateringTimer.time();
+        float progress =  1 - wateringTimer.timeToFinish()/(float)wateringTimer.time();
         return max(progress, 0.0f) * 100;
     }
 
