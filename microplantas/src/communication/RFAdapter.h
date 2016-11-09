@@ -5,28 +5,30 @@
 
 class RFAdapter{
 public:
-  RFAdapter(RF24 * radio) : radio(radio)
-  {}
+    RFAdapter(RF24 * radio) : radio(radio)
+    {}
 
-  int available() const{
-    if(!radio->available()){
-      return 0;
+    int available() const{
+        if(!radio->available()){
+            return 0;
+        }
+
+        return radio->getDynamicPayloadSize();
     }
 
-    return radio->getDynamicPayloadSize();
-  }
+    bool write(const uint8_t *data, size_t size){
+        radio->write(data, size);
+        return radio->txStandBy();
+    }
 
-  bool write(const uint8_t *data, size_t size){
-    radio->write(data, size);
-    return radio->txStandBy();
-  }
-
-  void readBytes(byte * data, int capacity){
-    radio->read(data, capacity);
-  }
+    int readBytes(byte * data, int capacity){
+        int length = available();
+        radio->read(data, capacity);
+        return length;
+    }
 
 protected:
-  RF24 * radio;
+    RF24 * radio;
 };
 
 #endif // RFADAPTER_H

@@ -19,7 +19,7 @@ public:
 
     if(length > 0){
       buffer->reset();
-      input->readBytes(buffer->data(), length);
+      length = input->readBytes(buffer->data(), buffer->capacity());
       buffer->size(length);
     }
 

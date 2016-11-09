@@ -5,13 +5,14 @@
 #include "communication.h"
 #include "SensorReader.h"
 
-template<typename Comm, size_t CAPACITY=3, size_t BUFFER_SIZE=200>
+template<typename Comm, size_t CAPACITY=3>
 class SensorAgregator{
 public:
   using Id = uint32_t;
 
-  SensorAgregator(Comm * comm)
+  SensorAgregator(Comm * comm, ClearableBuffer * jsonBuffer)
     : comm(comm)
+    , serializer(jsonBuffer)
   {}
 
   bool addNode(Id id, SensorReader * sensor){
@@ -56,8 +57,7 @@ public:
 
 protected:
   Comm * comm;
-  StaticJBuffer<BUFFER_SIZE> serial_buffer;
-  SensorsSerializer serializer{&serial_buffer};
+  SensorsSerializer serializer;
   SensorReader * sensors[CAPACITY];
   int numSensors=0;
 };

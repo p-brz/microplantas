@@ -8,6 +8,8 @@
 #include "protocol.h"
 #include "communication.h"
 #include "sensors.h"
+#include "services.h"
+#include "services/ServicesHandler.h"
 
 #include "helpers/Timer.h"
 
@@ -35,14 +37,17 @@ public:
 
         if(role == roles::sensor){
             setupSensors();
+
+            servicesHandler.servManager.addService(1, &waterService1);
+            servicesHandler.servManager.addService(2, &waterService2);
         }
     }
 
     void loop() {
         // put your main code here, to run repeatedly:
         if(role == roles::sensor){
-            handleServices();
-            sendSensors();
+            servicesHandler.handleServices();
+//            sendSensors();
         }
         else{
             receiveSensors();
@@ -61,25 +66,10 @@ public:
         sensorAgregator.addNode(2, &reader2);
     }
 
-    void handleServices(){
-        //TODO: implement
-        /*
-         * 1. Tem dados para receber?
-         *  1.1. Lê dados em buffer
-         *  1.2. Identifica o comando e argumentos
-         *  1.3. Executa serviço
-         *
-         * 2. Atualiza cada serviço em execução:
-         *  2.1. Se serviço sofrer atualização
-         *  2.2. Envia evento de notificação
-         *
-        */
-    }
-
     void sendSensors(){
         if(poolingTimer.finished()){
             for(int i=0; i < sensorAgregator.count(); ++i){
-                Serial.print("Send data for reader: #"); Serial.println(i);
+//                Serial.print("Send data for reader: #"); Serial.println(i);
                 sensorAgregator.sendData(i);
             }
 
@@ -137,14 +127,18 @@ protected:
     }
 
 private:
-    /** Variables **/
-    CommunicationRF comm{CE_PIN, CSN_PIN};
-//    CommunicationSerial comm;
-    BasicSensorReader<2> reader1, reader2;
-    SensorAgregator<decltype(comm)> sensorAgregator{&comm};
     roles role = roles::bridge;
-
     Timer poolingTimer{SENSOR_PERIOD};
+    BasicSensorReader<2> reader1, reader2;
+
+    WaterService waterService1{"regar", A0};
+    WaterService waterService2{"regar", A1};
+
+//    CommunicationRF comm{CE_PIN, CSN_PIN};
+    CommunicationSerial comm;
+    StaticJBuffer<JSON_BUFFER_SIZE> jsonBuffer;
+    SensorAgregator<decltype(comm)> sensorAgregator{&comm, &jsonBuffer};
+    ServicesHandler<decltype(comm)> servicesHandler{&comm, &jsonBuffer};
 };
 
 #endif // MICROPLANTS_H
