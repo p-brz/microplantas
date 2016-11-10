@@ -2,6 +2,7 @@
 #define RFADAPTER_H
 
 #include <RF24.h>
+#include <printf.h>
 
 #include "Buffer.h"
 #include "helpers/Timer.h"
@@ -11,8 +12,31 @@ public:
     static constexpr const int PKG_SIZE = 32;
 
 public:
-    RFAdapter(RF24 * radio) : radio(radio)
+    RFAdapter(RF24 * radio)
+        : radio(radio)
     {}
+
+    void begin(const uint64_t readingPipe, const uint64_t writingPipe){
+        this->readingPipe = readingPipe;
+        this->writingPipe = writingPipe;
+
+        printf_begin();
+
+        radio->begin();
+
+        // enable dynamic payloads
+        radio->enableDynamicPayloads();
+
+        if (writingPipe){
+            radio->openWritingPipe(writingPipe);
+        }
+        if(readingPipe){
+            radio->openReadingPipe(1,readingPipe);
+            radio->startListening();
+        }
+
+        radio->printDetails();
+    }
 
     int available() const{
         if(!radio->available()){
@@ -23,6 +47,16 @@ public:
     }
 
     bool write(const uint8_t *data, size_t size){
+        if(!writingPipe){
+            return false;
+        }
+
+        bool success = true;
+
+        if(readingPipe){
+            radio->stopListening();
+        }
+
         int dataToSend = 0;
         for (size_t sendCount = 0; sendCount < size; sendCount += dataToSend) {
             dataToSend = size - sendCount;
@@ -39,12 +73,16 @@ public:
 
             radio->write(buffer.data(), buffer.size());
             if(!radio->txStandBy()){
-                return false;
+                success = false;
+                break;
             }
-
         }
 
-        return true;
+        if(readingPipe){
+            radio->startListening();
+        }
+
+        return success;
     }
 
     int readBytes(byte * data, int capacity){
@@ -94,7 +132,8 @@ protected:
 
 protected:
     RF24 * radio;
-
+    uint64_t readingPipe;
+    uint64_t writingPipe;
     GenericBuffer<32> buffer;
 };
 

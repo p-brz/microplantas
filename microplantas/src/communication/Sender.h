@@ -32,8 +32,6 @@ public:
     }
 
     void reset(){
-        //reserve bytes for message length field
-        //    buffer->forward(2);
         buffer->reset();
     }
 public:

@@ -47,22 +47,7 @@ public:
     }
 
     void begin(const uint64_t readingPipe, const uint64_t writingPipe){
-        printf_begin();
-
-        radio.begin();
-
-        // enable dynamic payloads
-        radio.enableDynamicPayloads();
-
-        if (writingPipe){
-            radio.openWritingPipe(writingPipe);
-        }
-        if(readingPipe){
-            radio.openReadingPipe(1,readingPipe);
-            radio.startListening();
-        }
-
-        radio.printDetails();
+        rfAdapter.begin(readingPipe, writingPipe);
     }
 
     JsonObject & readJsonObject(JsonBuffer * buffer){

@@ -2,6 +2,7 @@
 #define MICROPLANTS_H
 
 #include "Arduino.h"
+#include <HardwareSerial.h>
 
 #include "config.h"
 
@@ -12,6 +13,7 @@
 #include "services/ServicesHandler.h"
 
 #include "helpers/Timer.h"
+
 
 enum class roles : byte{
     sensor,
@@ -31,8 +33,8 @@ public:
 
         bool isSensorNode = role == roles::sensor;
 
-        uint64_t readPipe = (isSensorNode  ? 0 : pipe1);
-        uint64_t writePipe = (isSensorNode ? pipe1 : 0);
+        uint64_t readPipe = (isSensorNode  ? pipe2 : pipe1);
+        uint64_t writePipe = (isSensorNode ? pipe1 : pipe2);
         comm.begin(readPipe, writePipe);
 
         if(role == roles::sensor){
@@ -46,11 +48,20 @@ public:
     void loop() {
         // put your main code here, to run repeatedly:
         if(role == roles::sensor){
-//            servicesHandler.handleServices();
+            servicesHandler.handleServices();
             sendSensors();
         }
         else{
-            receiveSensors();
+            if(Serial.available()){
+                char buffer[JSON_BUFFER_SIZE];
+                auto length = Serial.readBytesUntil('\n', buffer, JSON_BUFFER_SIZE - 1);
+                buffer[length] = '\0';
+
+                comm.sender.println(buffer);
+                comm.sender.send();
+            }
+
+            receiveData();
         }
     }
 
@@ -81,7 +92,7 @@ public:
         }
     }
 
-    void receiveSensors(){
+    void receiveData(){
         auto & receiver = comm.receiver;
         if ( receiver.available()){
 
@@ -134,7 +145,7 @@ private:
     WaterService waterService1{"regar", A0};
     WaterService waterService2{"regar", A1};
 
-    CommunicationRF comm{CE_PIN, CSN_PIN};
+    CommunicationRF comm{CE_PIN, CSN_PIN, };
 //    CommunicationSerial comm;
     StaticJBuffer<JSON_BUFFER_SIZE> jsonBuffer;
     SensorAgregator<decltype(comm)> sensorAgregator{&comm, &jsonBuffer};

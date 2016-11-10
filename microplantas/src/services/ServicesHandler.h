@@ -73,6 +73,7 @@ public:
         jsonBuffer->clear();
 
         if(comm->available()){
+            Serial.println("handleService: communication available");
             handleRequest(*jsonBuffer);
         }
 
@@ -102,8 +103,8 @@ protected:
         Service * s = servManager.getService(nodeId, cmd);
 
         if(s){
-            Serial.print("node: "); Serial.print(nodeId);
-            Serial.print("; cmd: ");Serial.println(cmd);
+//            Serial.print("node: "); Serial.print(nodeId);
+//            Serial.print("; cmd: ");Serial.println(cmd);
 
             if(s->execute(obj)){
                 sendStatus(StatusCode::Ok);
