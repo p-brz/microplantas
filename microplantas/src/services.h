@@ -7,6 +7,9 @@
 
 class WaterService : public Service{
 public:
+    static constexpr const int ON  = LOW;
+    static constexpr const int OFF = HIGH;
+public:
     WaterService(const char * name, int relayPin)
         : pin(relayPin)
     {
@@ -15,6 +18,7 @@ public:
 
     void setup() override{
         pinMode(pin, OUTPUT);
+        digitalWrite(pin, OFF);
     }
 
     bool execute(const Variant &args) override{
@@ -29,7 +33,7 @@ public:
 
 //        Serial.print("update to: "); Serial.println(on);
 
-        digitalWrite(pin, (on ? HIGH : LOW));
+        digitalWrite(pin, (on ? ON : OFF));
         setRunning(on);
     }
 

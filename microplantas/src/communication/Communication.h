@@ -8,6 +8,8 @@
 #include "Receiver.h"
 #include "RFAdapter.h"
 
+#include "printf.h"
+
 template<typename Receiver>
 char * receiveString(Receiver & receiver){
     auto len = receiver.read();
@@ -45,6 +47,8 @@ public:
     }
 
     void begin(const uint64_t readingPipe, const uint64_t writingPipe){
+        printf_begin();
+
         radio.begin();
 
         // enable dynamic payloads
@@ -57,6 +61,8 @@ public:
             radio.openReadingPipe(1,readingPipe);
             radio.startListening();
         }
+
+        radio.printDetails();
     }
 
     JsonObject & readJsonObject(JsonBuffer * buffer){

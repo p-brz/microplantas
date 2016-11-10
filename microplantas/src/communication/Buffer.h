@@ -3,18 +3,57 @@
 
 #define BUF_SIZE 64
 
-class Buffer{
+template<unsigned CAPACITY>
+class GenericBuffer{
 public:
     using byte = unsigned char;
 
 public:
-    Buffer() : idx(0)
+    GenericBuffer() : idx(0)
     {}
 
 public:
-    bool put(const void * data, int length);
-    bool putAt(const void * data, int length, int idx);
-    bool get(void * data, int length);
+    bool put(byte value){
+        return put(&value, 1);
+    }
+    bool put(const void * data, int length){
+        if(putAt(data, length, idx)){
+            this->idx += length;
+            return true;
+        }
+        return false;
+    }
+    bool putAt(const void * data, int length, int idx){
+        const byte * bytes = (const byte *)data;
+
+        if(length + idx > capacity() || idx < 0){
+            return false;
+        }
+
+        for(int i = 0; i < length; ++i){
+            buffer[idx] = bytes[i];
+            ++idx;
+        }
+
+        if(idx > _size){
+            _size = idx;
+        }
+
+        return true;
+    }
+    bool get(void * data, int length){
+        byte * bytes = (byte *)data;
+
+        if(length + idx > CAPACITY){
+            return false;
+        }
+
+        for(int i = 0; i < length; ++i){
+            bytes[i] = buffer[idx];
+            ++idx;
+        }
+        return true;
+    }
 
 public:
     void reset(){
@@ -42,13 +81,18 @@ public:
         this->_size = length;
     }
     int capacity() const{
-        return BUF_SIZE;
+        return CAPACITY;
+    }
+    int available() const{
+        return size() - index();
     }
 
 private:
-    byte buffer[BUF_SIZE];
+    byte buffer[CAPACITY];
     int idx; //aponta onde sera lido/escrito
     int _size;
 };
+
+using Buffer = GenericBuffer<BUF_SIZE>;
 
 #endif // BUFFER_H

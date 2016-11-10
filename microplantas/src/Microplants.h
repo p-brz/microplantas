@@ -31,7 +31,7 @@ public:
 
         bool isSensorNode = role == roles::sensor;
 
-        uint64_t readPipe = (isSensorNode  ? 0    : pipe1);
+        uint64_t readPipe = (isSensorNode  ? 0 : pipe1);
         uint64_t writePipe = (isSensorNode ? pipe1 : 0);
         comm.begin(readPipe, writePipe);
 
@@ -46,8 +46,8 @@ public:
     void loop() {
         // put your main code here, to run repeatedly:
         if(role == roles::sensor){
-            servicesHandler.handleServices();
-//            sendSensors();
+//            servicesHandler.handleServices();
+            sendSensors();
         }
         else{
             receiveSensors();
@@ -68,9 +68,13 @@ public:
 
     void sendSensors(){
         if(poolingTimer.finished()){
+            Serial.println("Sending data");
             for(int i=0; i < sensorAgregator.count(); ++i){
 //                Serial.print("Send data for reader: #"); Serial.println(i);
-                sensorAgregator.sendData(i);
+                if(!sensorAgregator.sendData(i)){
+                    Serial.print("failed to send data for node: ");
+                    Serial.println(i + 1);
+                }
             }
 
             poolingTimer.start();
@@ -85,24 +89,20 @@ public:
 
             // If a corrupt dynamic payload is received, it will be flushed
             if(!len){
-                //      Serial.println("Got corrupt package (0 bytes)");
+//                Serial.println("Got corrupt package (0 bytes)");
                 return;
             }
             else{
-                //      Serial.print("Received "); Serial.print(len); Serial.println(" bytes");
+//                Serial.print("Received "); Serial.print(len); Serial.println(" bytes");
             }
 
             byte * data = receiver.data();
 
-            //    Serial.print("Data: \"");
             for(int i=0; i < len; ++i){
-                //      Serial.print(data[i - 1], HEX);
                 Serial.print((char)data[i]);
             }
-            //    Serial.println("\"");
+//            Serial.println();
         }
-
-        //TODO: receber comandos da Serial e repassar via RF
 
         delay(30);
     }
@@ -134,8 +134,8 @@ private:
     WaterService waterService1{"regar", A0};
     WaterService waterService2{"regar", A1};
 
-//    CommunicationRF comm{CE_PIN, CSN_PIN};
-    CommunicationSerial comm;
+    CommunicationRF comm{CE_PIN, CSN_PIN};
+//    CommunicationSerial comm;
     StaticJBuffer<JSON_BUFFER_SIZE> jsonBuffer;
     SensorAgregator<decltype(comm)> sensorAgregator{&comm, &jsonBuffer};
     ServicesHandler<decltype(comm)> servicesHandler{&comm, &jsonBuffer};
